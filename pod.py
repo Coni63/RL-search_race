@@ -92,7 +92,7 @@ class Pod(Point):
         self.move()
         self.end()
         self.turn += 1
-        return self.nextCheckPointId == len(self.checkPointList), 600 - (self.score - initial_score)
+        return self.nextCheckPointId == len(self.checkPointList), self.eval_reward(initial_score)
 
     def applyMove2(self, pt, thrust):
         initial_score = self.score
@@ -103,8 +103,17 @@ class Pod(Point):
         self.move()
         self.end()
         self.turn += 1
-        return self.nextCheckPointId == len(self.checkPointList), 600 - (self.score - initial_score)
+        return self.nextCheckPointId == len(self.checkPointList), self.eval_reward(initial_score)
     
+    def eval_reward(self, initial_score):
+        if self.score == -1:
+            return 0
+
+        if self.score != initial_score:
+            return 600 - (self.score - initial_score)
+        else:
+            return 0
+
     def angle_to_point(self, angle):
         a = math.radians(self.angle + angle)
         px = self.x + math.cos(a) * 10000

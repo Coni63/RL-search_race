@@ -14,18 +14,21 @@ class Game:
         self.load_test()
         self.done = False
 
-    def reset(train = True):
+    def reset(self, train = True):
         if train:
             selected_test = random.choice(self.all_trains)
         else:
             selected_test = random.choice(self.all_tests)
 
-        self.set_game(selected_test)
-        return self.to_state()
+        return self.set_game(selected_test)
 
-    def step(angle, thrust):
+    def step(self, angle, thrust):
         if self.done:
-            raise RuntimeError("game is over")
+            return self.to_state(), 0, self.done, ""
+
+        if game.pod.turn >= 600:
+            self.done = True
+            return self.to_state(), 0, self.done, ""
 
         # update et output
         target_point = game.pod.angle_to_point(angle=angle)
@@ -33,14 +36,17 @@ class Game:
 
         output_str = f"{target_point.x} {target_point.y} {thrust}"
         
-        self.to_state(), reward, self.done, output_str
+        return self.to_state(), reward, self.done, output_str
 
     def to_state(self):
-        target_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId]
-
-        if game.pod.nextCheckPointId < len(game.pod.checkPointList)-1:
+        if self.done:
+            target_chkpt = game.pod.checkPointList[-1]
+            futur_chkpt = game.pod.checkPointList[-1]
+        elif game.pod.nextCheckPointId <= len(game.pod.checkPointList)-2:
+            target_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId]
             futur_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId+1]
         else:
+            target_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId]
             futur_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId]
 
         return [
@@ -57,10 +63,9 @@ class Game:
 
     def set_game(self, test):
         self.pod = Pod(test[-1].x, test[-1].y, 0, 0, 0, 0, test)
-        checkpt = self.pod.checkPointList[self.pod.nextCheckPointId]
-        angle = self.pod.getAngle(checkpt)
-        self.pod.angle = angle
-        return self.pod
+        checkpt = self.pod.checkPointList[0]
+        self.pod.angle = self.pod.getAngle(checkpt)
+        return self.to_state()
     
     def load_test(self):
         for file in glob.glob("datasets/*.json"):
@@ -88,21 +93,16 @@ class Game:
 
 if __name__ == "__main__":
     game = Game()
-    game.set_game(game.all_trains[0])
-    loop = 0
-    while loop < 1000:
-        checkpt = game.pod.checkPointList[game.pod.nextCheckPointId]
-
+    state = game.set_game(game.all_trains[0]) # x, y, vx, vy, pod_angle, diff_angle_chkpt1, dist_chkpt1, diff_angle_chkpt2 dist_chkpt2 
+    while True:        
         # partie a remplacer par un vrai algo
-        angle = game.pod.diffAngle(checkpt)
+        angle = state[5]
         thrust = 50
+
         # update et output
-        pt = game.pod.angle_to_point(angle=angle)
-        isOver, _ = game.pod.applyMove2(pt, thrust=thrust)
+        state, reward, done, output = game.step(angle, thrust)
 
         #print(f"{pt.x} {pt.y} {thrust}")
-        if isOver:
-            print(game.pod.score)  # should be 235.732
-            break
-        
-        loop += 1 
+        if done:
+            print("Final score = ", game.pod.score)  # should be 235.732
+            break        
