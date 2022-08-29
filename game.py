@@ -26,13 +26,14 @@ class Game:
         if self.done:
             return self.to_state(), 0, self.done, ""
 
-        if game.pod.turn >= 600:
+        if self.pod.turn >= 600:
+            self.pod.score = 1000
             self.done = True
             return self.to_state(), 0, self.done, ""
 
         # update et output
-        target_point = game.pod.angle_to_point(angle=angle)
-        self.done, reward = game.pod.applyMove2(target_point, thrust=thrust)
+        target_point = self.pod.angle_to_point(angle=angle)
+        self.done, reward = self.pod.applyMove2(target_point, thrust=thrust)
 
         output_str = f"{target_point.x} {target_point.y} {thrust}"
         
@@ -40,29 +41,30 @@ class Game:
 
     def to_state(self):
         if self.done:
-            target_chkpt = game.pod.checkPointList[-1]
-            futur_chkpt = game.pod.checkPointList[-1]
-        elif game.pod.nextCheckPointId <= len(game.pod.checkPointList)-2:
-            target_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId]
-            futur_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId+1]
+            target_chkpt = self.pod.checkPointList[-1]
+            futur_chkpt = self.pod.checkPointList[-1]
+        elif self.pod.nextCheckPointId <= len(self.pod.checkPointList)-2:
+            target_chkpt = self.pod.checkPointList[self.pod.nextCheckPointId]
+            futur_chkpt = self.pod.checkPointList[self.pod.nextCheckPointId+1]
         else:
-            target_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId]
-            futur_chkpt = game.pod.checkPointList[game.pod.nextCheckPointId]
+            target_chkpt = self.pod.checkPointList[self.pod.nextCheckPointId]
+            futur_chkpt = self.pod.checkPointList[self.pod.nextCheckPointId]
 
         return [
-            game.pod.x, 
-            game.pod.y, 
-            game.pod.vx, 
-            game.pod.vy, 
-            game.pod.angle, 
-            game.pod.diffAngle(target_chkpt), 
-            game.pod.distance(target_chkpt), 
-            game.pod.diffAngle(futur_chkpt), 
-            game.pod.distance(futur_chkpt), 
+            self.pod.x, 
+            self.pod.y, 
+            self.pod.vx, 
+            self.pod.vy, 
+            self.pod.angle, 
+            self.pod.diffAngle(target_chkpt), 
+            self.pod.distance(target_chkpt), 
+            self.pod.diffAngle(futur_chkpt), 
+            self.pod.distance(futur_chkpt), 
         ]
 
-    def set_game(self, test):
-        self.pod = Pod(test[-1].x, test[-1].y, 0, 0, 0, 0, test)
+    def set_game(self, test_set):
+        self.done = False
+        self.pod = Pod(test_set[-1].x, test_set[-1].y, 0, 0, 0, 0, test_set)
         checkpt = self.pod.checkPointList[0]
         self.pod.angle = self.pod.getAngle(checkpt)
         return self.to_state()
@@ -92,17 +94,42 @@ class Game:
         
 
 if __name__ == "__main__":
-    game = Game()
-    state = game.set_game(game.all_trains[0]) # x, y, vx, vy, pod_angle, diff_angle_chkpt1, dist_chkpt1, diff_angle_chkpt2 dist_chkpt2 
+    """
+    Simulation d'une seule game
+    """
+    env = Game()
+    state = env.set_game(env.all_trains[0]) # x, y, vx, vy, pod_angle, diff_angle_chkpt1, dist_chkpt1, diff_angle_chkpt2 dist_chkpt2 
     while True:        
         # partie a remplacer par un vrai algo
         angle = state[5]
         thrust = 50
 
         # update et output
-        state, reward, done, output = game.step(angle, thrust)
+        state, reward, done, output = env.step(angle, thrust)
 
         #print(f"{pt.x} {pt.y} {thrust}")
         if done:
-            print("Final score = ", game.pod.score)  # should be 235.732
+            print("Test 1 - Final score = ", env.pod.score)  # should be 235.732
             break        
+    print("\n\n")
+    
+    """
+    Simulation d'un submit avec basic algo
+    """
+    env = Game()
+
+    total_score = 0
+    for test_set in env.all_tests:
+        state = env.set_game(test_set)
+        while True:        
+            angle = state[5]
+            thrust = 50
+
+            state, reward, done, output = env.step(angle, thrust)
+
+            if done:
+                print("Final score = ", env.pod.score)
+                total_score += env.pod.score
+                break     
+                
+    print("Total Test score = ", total_score)  # should be 42415.8
