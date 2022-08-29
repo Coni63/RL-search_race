@@ -11,8 +11,8 @@ class Pod(Point):
         self.nextCheckPointId = nextCheckPointId
         self.checkPointList = checkPointList
         self.angle = round(self.getAngle(self.checkPointList[self.nextCheckPointId]))
-        self.points = 0
         self.turn = 0
+        self.score = 0
     
     def __repr__(self):
         return f"{self.nextCheckPointId} {self.x} {self.y} {self.vx} {self.vy} {self.angle}"
@@ -85,14 +85,17 @@ class Pod(Point):
             self.applyMove(angle, thrust)
 
     def applyMove(self, angle, thrust):
+        initial_score = self.score
         self.rotate(angle)
         self.boost(thrust)
-        self.checkCrossCheckPoint(); # il faut ajouter le checkpoint
+        self.checkCrossCheckPoint(); # va set le score
         self.move()
         self.end()
-        return self.nextCheckPointId == len(self.checkPointList)-1
+        self.turn += 1
+        return self.nextCheckPointId == len(self.checkPointList), 600 - (self.score - initial_score)
 
     def applyMove2(self, pt, thrust):
+        initial_score = self.score
         angle = self.diffAngle(pt)
         self.rotate(angle)
         self.boost(thrust)
@@ -100,7 +103,7 @@ class Pod(Point):
         self.move()
         self.end()
         self.turn += 1
-        return self.nextCheckPointId == len(self.checkPointList)-1
+        return self.nextCheckPointId == len(self.checkPointList), 600 - (self.score - initial_score)
     
     def angle_to_point(self, angle):
         a = math.radians(self.angle + angle)
